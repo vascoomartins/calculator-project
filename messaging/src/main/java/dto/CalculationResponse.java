@@ -27,4 +27,16 @@ public class CalculationResponse {
     public String getError() {
         return error;
     }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
+    }
+
+    public void setResult(BigDecimal result) {
+        this.result = result;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
 }

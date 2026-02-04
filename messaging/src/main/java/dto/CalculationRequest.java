@@ -23,6 +23,8 @@ public class CalculationRequest {
         return requestId;
     }
 
+    public OperationType getOperation() { return operation; }
+
     public BigDecimal getA() {
         return a;
     }
@@ -30,4 +32,21 @@ public class CalculationRequest {
     public BigDecimal getB() {
         return b;
     }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
+    }
+
+    public void setOperation(OperationType operation) {
+        this.operation = operation;
+    }
+
+    public void setA(BigDecimal a) {
+        this.a = a;
+    }
+
+    public void setB(BigDecimal b) {
+        this.b = b;
+    }
+
 }
