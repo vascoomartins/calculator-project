@@ -12,6 +12,7 @@
     <modules>
         <module>calculator</module>
         <module>rest</module>
+        <module>messaging</module>
     </modules>
 
     <properties>
