@@ -1,7 +1,7 @@
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"controller", "kafka", "service", "dto"})
+@SpringBootApplication(scanBasePackages = {"controller", "config", "dto"})
 public class RestApplication {
 
     public static void main(String[] args) {

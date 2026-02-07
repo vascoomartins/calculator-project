@@ -4,30 +4,32 @@ import dto.ApiResult;
 import dto.CalculationRequest;
 import dto.CalculationResponse;
 import enums.OperationType;
-import kafka.CalculationRequestProducer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import service.PendingRequests;
 
 import java.math.BigDecimal;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/")
 public class CalculatorController {
 
-    private final CalculationRequestProducer calculationRequestProducer;
-    private final PendingRequests pendingRequests;
+    @Value("${kafka.topic.requests}")
+    private String requestTopic;
 
-    public CalculatorController(CalculationRequestProducer calculationRequestProducer,
-                                PendingRequests pendingRequests) {
-        this.calculationRequestProducer = calculationRequestProducer;
-        this.pendingRequests = pendingRequests;
+    private final ReplyingKafkaTemplate<String, CalculationRequest, CalculationResponse> calculationRequestReplyKafkaTemplate;
+
+    public CalculatorController(ReplyingKafkaTemplate<String, CalculationRequest, CalculationResponse> replyingKafkaTemplate) {
+        this.calculationRequestReplyKafkaTemplate = replyingKafkaTemplate;
     }
 
     @GetMapping("/sum")
@@ -54,21 +56,25 @@ public class CalculatorController {
         String requestId = UUID.randomUUID().toString();
 
         CalculationRequest request = new CalculationRequest(requestId, operation, a, b);
-        CompletableFuture<CalculationResponse> future = pendingRequests.register(requestId);
-
-        calculationRequestProducer.send(request);
+        ProducerRecord<String, CalculationRequest> record = new ProducerRecord<>(requestTopic, requestId, request);
 
         try {
-            CalculationResponse response = future.get(3, TimeUnit.SECONDS);
+            RequestReplyFuture<String, CalculationRequest, CalculationResponse> future =
+                    calculationRequestReplyKafkaTemplate.sendAndReceive(record);
+
+            ConsumerRecord<String, CalculationResponse> responseRecord = future.get(3, TimeUnit.SECONDS);
+            CalculationResponse response = responseRecord.value();
 
             if (response.getError() != null) {
                 return ResponseEntity.badRequest().body(response.getError());
             }
 
             return ResponseEntity.ok(new ApiResult(response.getResult()));
-        } catch (Exception e) {
-            pendingRequests.remove(requestId);
+
+        } catch (java.util.concurrent.TimeoutException e) {
             return ResponseEntity.status(504).body("Timeout waiting for calculator response");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
         }
     }
 }
