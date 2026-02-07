@@ -1,7 +1,7 @@
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"service", "kafka"})
+@SpringBootApplication(scanBasePackages = {"service", "kafka", "config"})
 public class CalculatorApplication {
 
     public static void main(String[] args) {
